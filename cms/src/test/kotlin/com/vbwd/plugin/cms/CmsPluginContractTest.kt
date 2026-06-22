@@ -21,29 +21,36 @@ private class FakeApi : ApiClient {
         jsonBody: String?,
         deserializer: DeserializationStrategy<T>,
     ): T = EmptyResponse() as T
+
     override fun setToken(token: String?) = Unit
-    override fun on(event: ApiEvent, handler: () -> Unit) = Unit
+
+    override fun on(
+        event: ApiEvent,
+        handler: () -> Unit,
+    ) = Unit
 }
 
 class CmsPluginContractTest {
     private fun sdk() = DefaultPlatformSdk(FakeApi(), ApiClientConfig("http://x"), DefaultEventBus(FakeApi()))
 
     @Test
-    fun `install registers the posts route, menu item and translation when configured`() = runTest {
-        val platform = sdk()
-        CmsPlugin(postType = "post", category = "news", webOrigin = "https://x", archiveUrl = "https://x/a")
-            .install(platform)
+    fun `install registers the posts route, menu item and translation when configured`() =
+        runTest {
+            val platform = sdk()
+            CmsPlugin(postType = "post", category = "news", webOrigin = "https://x", archiveUrl = "https://x/a")
+                .install(platform)
 
-        assertEquals(listOf("/posts"), platform.getRoutes().map { it.path })
-        assertEquals(listOf("cms-posts"), platform.getMenuItems().map { it.id })
-        assertEquals("Posts", platform.getTranslations()["en"]?.get("cms.posts.title"))
-    }
+            assertEquals(listOf("/posts"), platform.getRoutes().map { it.path })
+            assertEquals(listOf("cms-posts"), platform.getMenuItems().map { it.id })
+            assertEquals("Posts", platform.getTranslations()["en"]?.get("cms.posts.title"))
+        }
 
     @Test
-    fun `install registers nothing when the CMS config is absent`() = runTest {
-        val platform = sdk()
-        CmsPlugin(postType = null, category = null, webOrigin = null, archiveUrl = null).install(platform)
-        assertTrue(platform.getRoutes().isEmpty())
-        assertTrue(platform.getMenuItems().isEmpty())
-    }
+    fun `install registers nothing when the CMS config is absent`() =
+        runTest {
+            val platform = sdk()
+            CmsPlugin(postType = null, category = null, webOrigin = null, archiveUrl = null).install(platform)
+            assertTrue(platform.getRoutes().isEmpty())
+            assertTrue(platform.getMenuItems().isEmpty())
+        }
 }

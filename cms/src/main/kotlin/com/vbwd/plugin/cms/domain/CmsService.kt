@@ -12,7 +12,10 @@ sealed class CmsServiceError(message: String) : Exception(message) {
 
 /** Narrow service contract (ISP/DIP) — one verb: fetch the embed manifest. */
 interface CmsService {
-    suspend fun fetchManifest(type: String, category: String): CmsManifest
+    suspend fun fetchManifest(
+        type: String,
+        category: String,
+    ): CmsManifest
 }
 
 /**
@@ -21,14 +24,15 @@ interface CmsService {
  * never a silent blank). Port of the iOS `DefaultCmsService`.
  */
 class DefaultCmsService(private val api: ApiClient) : CmsService {
-    override suspend fun fetchManifest(type: String, category: String): CmsManifest =
+    override suspend fun fetchManifest(
+        type: String,
+        category: String,
+    ): CmsManifest =
         try {
             api.get(CmsEndpoints.embedManifest(type, category))
-        } catch (error: ApiError) {
-            if (error is ApiError.Http && error.status == HTTP_NOT_FOUND) {
-                throw CmsServiceError.NotFound(error.message)
-            }
-            throw error
+        } catch (http: ApiError.Http) {
+            if (http.status != HTTP_NOT_FOUND) throw http
+            throw CmsServiceError.NotFound(http.message).apply { initCause(http) }
         }
 
     private companion object {

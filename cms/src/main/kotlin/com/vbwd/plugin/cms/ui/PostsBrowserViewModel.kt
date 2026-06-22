@@ -20,9 +20,13 @@ class PostsBrowserViewModel(
 ) {
     sealed interface LoadState {
         data object Idle : LoadState
+
         data object Validating : LoadState
+
         data class Ready(val url: String) : LoadState
+
         data object NotConfigured : LoadState
+
         data class Error(val message: String) : LoadState
     }
 
@@ -42,13 +46,17 @@ class PostsBrowserViewModel(
                 return
             }
             val resolved = resolve(manifest.archiveUrl, webOrigin)
-            _state.value = when {
-                resolved != null -> LoadState.Ready(resolved)
-                archiveUrlFallback != null -> LoadState.Ready(archiveUrlFallback)
-                else -> LoadState.Error("Server returned no archive URL.")
-            }
-        } catch (notFound: CmsServiceError.NotFound) {
-            // 404 ⇒ the dedicated "not configured" screen (reason is informational).
+            _state.value =
+                when {
+                    resolved != null -> LoadState.Ready(resolved)
+                    archiveUrlFallback != null -> LoadState.Ready(archiveUrlFallback)
+                    else -> LoadState.Error("Server returned no archive URL.")
+                }
+        } catch (
+            @Suppress("SwallowedException") notFound: CmsServiceError.NotFound,
+        ) {
+            // 404 is itself the signal — map it to the "not configured" screen; the
+            // exception type carries the meaning, so its payload is intentionally dropped.
             _state.value = LoadState.NotConfigured
         } catch (error: ApiError) {
             _state.value = LoadState.Error(error.message)
@@ -61,11 +69,15 @@ class PostsBrowserViewModel(
 
     companion object {
         /** Resolve `archive_url`: absolute → verbatim; relative → against [base]. */
-        fun resolve(raw: String?, base: String?): String? {
-            if (raw.isNullOrEmpty()) return null
-            if (raw.startsWith("http://") || raw.startsWith("https://")) return raw
-            val origin = base?.takeIf { it.isNotEmpty() } ?: return null
-            return origin.trimEnd('/') + "/" + raw.trimStart('/')
+        fun resolve(
+            raw: String?,
+            base: String?,
+        ): String? {
+            val path = raw?.takeIf { it.isNotEmpty() } ?: return null
+            return when {
+                path.startsWith("http://") || path.startsWith("https://") -> path
+                else -> base?.takeIf { it.isNotEmpty() }?.let { "${it.trimEnd('/')}/${path.trimStart('/')}" }
+            }
         }
     }
 }

@@ -24,14 +24,15 @@ class CmsPlugin(
     private val archiveUrl: String?,
     private val tokenProvider: () -> String? = { null },
 ) : Plugin {
-    override val metadata = PluginMetadata(
-        name = "cms",
-        version = SemanticVersion(0, 1, 0),
-        description = "Config-driven Posts browser pointing at the host CMS.",
-        author = "VBWD",
-        keywords = listOf("cms", "posts", "browser", "embed"),
-        translations = mapOf("en" to mapOf("cms.posts.title" to "Posts")),
-    )
+    override val metadata =
+        PluginMetadata(
+            name = "cms",
+            version = SemanticVersion(0, 1, 0),
+            description = "Config-driven Posts browser pointing at the host CMS.",
+            author = "VBWD",
+            keywords = listOf("cms", "posts", "browser", "embed"),
+            translations = mapOf("en" to mapOf("cms.posts.title" to "Posts")),
+        )
 
     override suspend fun install(sdk: PlatformSdk) {
         val type = postType
@@ -39,18 +40,21 @@ class CmsPlugin(
         if (type.isNullOrEmpty() || cat.isNullOrEmpty()) return
 
         val service = DefaultCmsService(sdk.api)
-        sdk.addRoute(PluginRoute(path = "/posts", name = "posts") {
-            val viewModel = remember {
-                PostsBrowserViewModel(
-                    type = type,
-                    category = cat,
-                    archiveUrlFallback = archiveUrl,
-                    webOrigin = webOrigin,
-                    service = service,
-                )
-            }
-            PostsBrowserScreen(viewModel, tokenProvider)
-        })
+        sdk.addRoute(
+            PluginRoute(path = "/posts", name = "posts") {
+                val viewModel =
+                    remember {
+                        PostsBrowserViewModel(
+                            type = type,
+                            category = cat,
+                            archiveUrlFallback = archiveUrl,
+                            webOrigin = webOrigin,
+                            service = service,
+                        )
+                    }
+                PostsBrowserScreen(viewModel, tokenProvider)
+            },
+        )
 
         sdk.addMenuItem(
             MenuItem(

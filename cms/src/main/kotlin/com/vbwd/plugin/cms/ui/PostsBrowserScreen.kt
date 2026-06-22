@@ -26,7 +26,10 @@ private val PADDING = 16.dp
  * `PostsBrowserView`. Fail-loud: a missing manifest shows a state, never a blank.
  */
 @Composable
-fun PostsBrowserScreen(viewModel: PostsBrowserViewModel, tokenProvider: () -> String?) {
+fun PostsBrowserScreen(
+    viewModel: PostsBrowserViewModel,
+    tokenProvider: () -> String?,
+) {
     val state by viewModel.state.collectAsState()
     LaunchedEffect(Unit) { viewModel.load() }
 
@@ -34,27 +37,36 @@ fun PostsBrowserScreen(viewModel: PostsBrowserViewModel, tokenProvider: () -> St
         is PostsBrowserViewModel.LoadState.Ready -> CmsWebView(current.url, tokenProvider)
         PostsBrowserViewModel.LoadState.NotConfigured -> Centered("Posts are not configured.")
         is PostsBrowserViewModel.LoadState.Error -> Centered(current.message)
-        else -> Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-            CircularProgressIndicator()
-        }
+        else ->
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                CircularProgressIndicator()
+            }
     }
 }
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-private fun CmsWebView(url: String, tokenProvider: () -> String?) {
+private fun CmsWebView(
+    url: String,
+    tokenProvider: () -> String?,
+) {
     AndroidView(
         modifier = Modifier.fillMaxSize().testTag("posts_browser_webview"),
         factory = { context ->
             WebView(context).apply {
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
-                webViewClient = object : WebViewClient() {
-                    override fun onPageStarted(view: WebView?, pageUrl: String?, favicon: android.graphics.Bitmap?) {
-                        val script = PostsBrowserAuthBootstrap.javaScriptSource(tokenProvider(), userJson = null)
-                        if (script.isNotEmpty()) view?.evaluateJavascript(script, null)
+                webViewClient =
+                    object : WebViewClient() {
+                        override fun onPageStarted(
+                            view: WebView?,
+                            pageUrl: String?,
+                            favicon: android.graphics.Bitmap?,
+                        ) {
+                            val script = PostsBrowserAuthBootstrap.javaScriptSource(tokenProvider(), userJson = null)
+                            if (script.isNotEmpty()) view?.evaluateJavascript(script, null)
+                        }
                     }
-                }
                 loadUrl(url)
             }
         },
